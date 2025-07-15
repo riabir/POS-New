@@ -37,17 +37,23 @@
                             <tbody>
                                 @foreach($products as $product)
                                     <tr>
-                                        <td>{{ $product->category->name}} </td>
-                                        <td>{{ $product->productType->name }}</td>
-                                        <td>{{ $product->brand->name }}</td>
+                                        {{-- Correct path: Go through productType to get the category's name --}}
+                                        {{-- Use ?-> to prevent errors if productType or category is null --}}
+                                        <td>{{ $product->productType?->category?->name }}</td>
+
+                                        {{-- Use ?-> to prevent errors if productType is null --}}
+                                        <td>{{ $product->productType?->name }}</td>
+
+                                        {{-- Use ?-> to prevent errors if brand is null --}}
+                                        <td>{{ $product->brand?->name }}</td>
+
                                         <td>{{ $product->model }}</td>
                                         <td>{{ $product->description }}</td>
                                         <td>
                                             <a href="{{ route('products.edit', $product->id) }}"
                                                 class="btn btn-sm btn-warning me-2">Edit</a>
 
-                                            <form method="POST"
-                                                action="{{ route('products.destroy', $product->id) }}"
+                                            <form method="POST" action="{{ route('products.destroy', $product->id) }}"
                                                 style="display:inline;">
                                                 @csrf
                                                 @method('DELETE')

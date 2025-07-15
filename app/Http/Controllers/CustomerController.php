@@ -26,7 +26,7 @@ class CustomerController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'customer_ame' => 'required|string|max:255',
             'phone' => 'required|string|max:11',
             'email' => 'required|email|unique:employees',
             'address' => 'required|string',
@@ -57,7 +57,7 @@ class CustomerController extends Controller
     {
 
         $customer = Customer::find($id);
-        $customer->name = $request->name;
+        $customer->customer_name = $request->customer_name;
         $customer->phone = $request->phone;
         $customer->email = $request->email;
         $customer->address = $request->address;

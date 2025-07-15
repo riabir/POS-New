@@ -1,135 +1,120 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Dashboard-Product Types') }}
+            Manage Product Types
         </h2>
     </x-slot>
-
-    </form>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <div class="container">
 
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                            data-bs-target="#registerModal">
-                            Product Types
+                    {{-- 1. Page Header and "Add New" Button --}}
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h3 mb-0">Product Type List</h1>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productTypeModal">
+                            + Add New Product Type
                         </button>
+                    </div>
 
-                        <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel"
-                            aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="registerModalLabel">Add Product Types</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <!-- categories Form -->
-                                        <form id="product_typeForm" method="post"
-                                            action="{{route('product_types.store')}}">
-                                            @csrf
-
-                                            <div class="mb-3">
-                                                <label for="category_id" class="form-label">Category</label>
-                                                <select class="form-select" id="category_id" name="category_id"
-                                                    required>
-                                                    <option value="">Select Category</option>
-                                                    @foreach($categories as $category)
-                                                        <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-
-                                            <!-- Product Types -->
-                                            <div class="mb-3">
-                                                <label for="name" class="form-label">Product Types</label>
-                                                <input type="text" class="form-control" id="name" name="name">
-                                            </div>
-
-                                            <div class="modal-footer">
-                                                <button type="submit" class="btn btn-primary">Save</button>
-                                                <button type="button" class="btn btn-secondary"
-                                                    onclick="clearForm()">Clear</button>
-
-
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
+                    {{-- 2. Styled Session Success Message --}}
+                    @if(session('success'))
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
+                    @endif
 
-                        <br><br><br>
-
-
-                        <h1>Product Types List</h1>
-                        <br>
-                        @if(session('success'))
-                            <div class="alert alert-success">
-                                {{ session('success') }}
-                            </div>
-                        @endif
-
-                        <table class="table">
-                            <thead>
+                    {{-- 3. Well-Styled and Responsive Table --}}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover table-bordered">
+                            <thead class="table-light">
                                 <tr>
-
-                                    <th>No</th>
-                                    <th>Categorie</th>
-                                    <th>Product Types</th>
-                                    <th>Action</th>
-                                    <th></th>
+                                    <th scope="col" style="width: 5%;">#</th>
+                                    <th scope="col">Product Type</th>
+                                    <th scope="col">Parent Category</th>
+                                    <th scope="col" style="width: 15%;" class="text-center">Actions</th>
                                 </tr>
                             </thead>
-
                             <tbody>
-
-                                @foreach($product_types as $product_type)
+                                {{-- 4. Using @forelse for a clean empty state --}}
+                                @forelse($product_types as $product_type)
                                     <tr>
-                                        <td>{{ $product_type->id }} </td>
-                                        <!--  -->
-                                        <td>{{ $product_type->Category->name }} </td>
-                                        <td>{{ $product_type->name }} </td>
-                                      
+                                        <th scope="row">{{ $loop->iteration }}</th>
+                                        <td>{{ $product_type->name }}</td>
+                                        <td>{{ $product_type->category->name }}</td>
                                         <td>
-                                            <a href="{{ route('product_types.edit', $product_type->id) }}"
-                                                class="btn btn-sm btn-warning me-2">Edit</a>
-
-                                            <form method="POST"
-                                                action="{{ route('product_types.destroy', $product_type->id) }}"
-                                                style="display:inline;">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button onclick="return confirm('Are you sure?')" type="submit"
-                                                    class="btn btn-sm btn-danger">
-                                                    Delete
-                                                </button>
-                                            </form>
+                                            {{-- 5. Actions in a flex container for alignment --}}
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a href="{{ route('product_types.edit', $product_type->id) }}" class="btn btn-sm btn-warning">Edit</a>
+                                                <form method="POST" action="{{ route('product_types.destroy', $product_type->id) }}" onsubmit="return confirm('Are you sure you want to delete this?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                                </form>
+                                            </div>
                                         </td>
-
-                                @endforeach
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center">No product types found.</td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
-
                     </div>
+
+                    {{-- 6. Pagination Links --}}
+                    <div class="mt-4">
+                        {{-- Make sure you are using ->paginate() in your controller for this to work --}}
+                        {{-- $product_types->links() --}}
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function clearForm() {
-            document.getElementById("product_typeForm").reset();
-        }
-    </script>
 
+    <!-- Add Product Type Modal -->
+    <div class="modal fade" id="productTypeModal" tabindex="-1" aria-labelledby="productTypeModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content dark:bg-gray-700">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="productTypeModalLabel">Add New Product Type</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="productTypeForm" method="post" action="{{ route('product_types.store') }}">
+                    @csrf
+                    <div class="modal-body">
+                        <!-- Category Dropdown -->
+                        <div class="mb-3">
+                            <label for="category_id" class="form-label">Parent Category</label>
+                            <select class="form-select" id="category_id" name="category_id" required>
+                                <option value="" selected disabled>Select a category...</option>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
 
+                        <!-- Product Type Name -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Product Type Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save Product Type</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
+    {{-- 7. Pushing Scripts correctly using Laravel's stack system --}}
+    @push('scripts')
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    @endpush
 </x-app-layout>

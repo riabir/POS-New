@@ -25,8 +25,8 @@
                             @csrf
 
                             <div class="mb-3">
-                                <label for="name" class="form-label">Customer Name</label>
-                                <input type="text" class="form-control" id="name" name="name"
+                                <label for="customer_name" class="form-label">Customer Name</label>
+                                <input type="text" class="form-control" id="customer_name" name="customer_name"
                                     placeholder="Enter Company Name" required>
                             </div>
 

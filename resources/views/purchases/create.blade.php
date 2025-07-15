@@ -1,199 +1,361 @@
-    <x-app-layout>
-        <x-slot name="header">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                {{ __('Purchase') }}
-            </h2>
-        </x-slot>
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900 dark:text-gray-100">
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+            {{ __('Create Purchase') }}
+        </h2>
+    </x-slot>
 
-                        <form method="get" action="{{route('searchvendor')}}">
-                            @csrf
-                            <label for="phone">Phone Number:</label><br>
-                            <input type="text" id="phone" name="phone" oninput="test(this)" value=""><br>
+    {{-- Basic Styling for a clean, organized layout --}}
+    <style>
+        .form-control {
+            display: block;
+            width: 100%;
+            padding: .375rem .75rem;
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.5;
+            color: #212529;
+            background-color: #fff;
+            background-clip: padding-box;
+            border: 1px solid #ced4da;
+            border-radius: .25rem;
+            transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+        }
 
-                            <label for="vendor_name">Vendor Name:</label><br>
-                            <input type="text" id="vendor_name" name="vendor_name" value=""><br>
+        .form-control[readonly],
+        .form-control[disabled] {
+            background-color: #e9ecef;
+            opacity: 1;
+        }
 
-                            <label for="email">Email Address:</label><br>
-                            <input type="text" id="email" name="email" value=""><br>
 
-                            <label for="address">Address</label><br>
-                            <input type="text" id="address" name="address" value=""><br>
-                        </form>
+        /* ========================================================================
+   2. Reusable Components
+   ======================================================================== */
 
-                        <br></br>
+        /* --- Button Component --- */
+        .btn {
+            display: inline-block;
+            font-weight: 400;
+            line-height: 1.5;
+            color: #212529;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+            user-select: none;
+            background-color: transparent;
+            border 1px solid #ced4da;
+            border-radius: .25rem;
+            transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+        }
+
+        /* Styles for disabled or readonly inputs */
+        .form-control[readonly],
+        .form-control[disabled] {
+            background-color: #e9ecef;
+            opacity: 1;
+        }
+
+
+        /* =================================== */
+        /*   3. Buttons                        */
+        /* =================================== */
+
+        /* Base button style */
+        .btn {
+            display: inline-block;
+            padding: .375rem .75rem;
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.5;
+            text-align: center;
+            vertical-align: middle;
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+            border: 1px solid transparent;
+            border-radius: .25rem;
+        }
+
+        /* Color variations */
+        .btn-primary {
+            color: #fff;
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .btn-success {
+            color: #fff;
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .btn-danger {
+            color: #fff;
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+
+        /* =================================== */
+        /*   4. Component: Totals Section      */
+        /* =================================== */
+        /* Styles for the summary block (sub-total, discount, etc.) */
+
+        .totals-section {
+            max-width: 300px;
+            /* Adjust as needed */
+            margin-left: auto;
+            /* Aligns the entire block to the right */
+        }
+
+        .totals-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .totals-row label {
+            font-weight: bold;
+            margin-right: 1rem;
+            white-space: nowrap;
+            /* Prevents labels from wrapping to a new line */
+        }
+
+        .totals-row input {
+            text-align: right;
+        }
+    </style>
+
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900 dark:text-gray-100">
+
+                    <!-- Vendor Information Section -->
+                    <div class="border p-4 rounded mb-4">
+                        <h3 class="font-bold text-lg mb-3">Vendor Information</h3>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="phone_search">Search Vendor by Phone</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">+880</span>
+                                    <input type="text" id="phone_search" class="form-control"
+                                        placeholder="Enter Phone Number" maxlength="10">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4"><label>Vendor Name</label><input type="text" id="vendor_name"
+                                    class="form-control" placeholder="Auto Fill" readonly></div>
+                            <div class="col-md-4"><label>Email</label><input type="text" id="email" class="form-control"
+                                    placeholder="Auto Fill" readonly></div>
+                            <div class="col-md-4"><label>Address</label><input type="text" id="address"
+                                    class="form-control" placeholder="Auto Fill" readonly></div>
+                        </div>
+                    </div>
+
+                    <hr class="my-5" />
+
+                    <!-- Main Purchase Form -->
+                    <form id="purchaseForm" method="POST" action="{{ route('purchases.store') }}">
+                        @csrf
+                        <input type="hidden" name="vendor_id" id="form_vendor_id" required>
+                        {{-- +++ ADDED HIDDEN INPUTS FOR SUBMISSION +++ --}}
+                        <input type="hidden" name="sub_total" id="form_sub_total">
+                        <input type="hidden" name="grand_total" id="form_grand_total">
 
                         <div class="mb-3">
-                            <label for="products" class="form-label">Product</label>
-
-                            <br></br>
-                            <td>
-                                <input type="text" name="src_product" id="src_product" oninput="search(this)" class="form-control unit-price" step="0.01" style="width: 120px;" required>
-                                <div class="userlist" id="userlist"></div>
-                            </td>
-
+                            <label for="remarks">Remarks</label>
+                            <textarea name="remarks" id="remarks" class="form-control"
+                                placeholder="Add any relevant notes for this purchase..."></textarea>
                         </div>
-                        <div class="selProduct" id="selProduct"></div>
-                    </div>
+
+                        <h3 class="font-bold text-lg mt-5 mb-3">Product Items</h3>
+                        <div id="itemContainer">
+                            {{-- Item rows will be dynamically inserted here by JavaScript --}}
+                        </div>
+
+                        <button type="button" id="addItemBtn" class="btn btn-primary mt-3">+</button>
+
+                        <!-- Totals Section -->
+                        <div class="totals-section mt-4">
+                            <div class="totals-row">
+                                <label for="sub_total">Sub Total</label>
+                                <input type="text" id="sub_total" class="form-control" value="0.00" readonly>
+                            </div>
+                            <div class="totals-row">
+                                <label for="discount">Discount</label>
+                                <input type="number" id="discount" name="discount" class="form-control" value="0"
+                                    min="0">
+                            </div>
+                            <div class="totals-row">
+                                <label for="grand_total">Grand Total</label>
+                                <input type="text" id="grand_total" class="form-control" value="0.00" readonly
+                                    style="font-weight: bold; font-size: 1.1rem; color: #28a745;">
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        <button type="submit" class="btn btn-success">Create Purchase</button>
+                    </form>
                 </div>
             </div>
         </div>
+    </div>
 
+    <!-- Template for a single dynamic item row -->
+    <template id="itemRowTemplate">
+        <div class="item-row border p-3 mb-3 rounded">
+            <div class="row">
+                <div class="col-md-3">
+                    <label>Product</label>
+                    <select class="form-control product-input" data-name="product_id" required>
+                        <option value="" selected disabled>Select a Product</option>
+                        @if(isset($products))
+                        @foreach($products as $product)
+                        <option value="{{ $product->id }}">{{ $product->model }} {{ $product->description }}</option>
+                        @endforeach
+                        @endif
+                    </select>
+                </div>
+                <div class="col-md-2"><label>Unit Price</label><input type="number" step="0.01"
+                        class="form-control unit-price" data-name="unit_price" required></div>
+                <div class="col-md-1"><label>Quantity</label><input type="number" class="form-control quantity"
+                        value="1" min="1" data-name="quantity" required></div>
+                <div class="col-md-2"><label>Total Price</label><input type="text" class="form-control total-price"
+                        data-name="total_price" readonly></div>
+                <div class="col-md-1"><label>Warranty</label><input type="number" class="form-control quantity"
+                        value="365" min="1" data-name="warranty" required></div>
+                <div class="col-md-2"><label>Serial Numbers</label>
+                    <div class="serial-numbers"></div>
+                </div>
+                <div class="col-md-1"><label>Action</label><button type="button"
+                        class="btn btn-danger remove-item w-100">X</button></div>
+            </div>
+        </div>
+    </template>
 
-        <script>
-            function test(e) {
-                if (e.value) {
-                    $.ajax({
-                        url: "/searchvendor",
-                        type: "GET",
-                        data: {
-                            id: e.value
-                        },
-                        success: function(response) {
-                            console.log(response.vendor_name);
-                            $('#vendor_name').val(response.vendor_name);
-                            $('#email').val(response.email);
-                            $('#address').val(response.address);
-                        },
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // === DOM ELEMENTS ===
+            const itemContainer = document.getElementById('itemContainer');
+            const addItemBtn = document.getElementById('addItemBtn');
+            const phoneSearchInput = document.getElementById('phone_search');
+            const formVendorIdInput = document.getElementById('form_vendor_id');
+            const discountInput = document.getElementById('discount');
+
+            // === VENDOR SEARCH LOGIC ===
+            phoneSearchInput.addEventListener('input', function() {
+                const phone = this.value.trim();
+
+                formVendorIdInput.value = '';
+                document.getElementById('vendor_name').value = '';
+                document.getElementById('email').value = '';
+                document.getElementById('address').value = '';
+
+                if (phone.length !== 10) return;
+
+                fetch(`{{ url('searchvendor') }}/${phone}`) // Using URL helper for safety
+                    .then(response => {
+                        if (!response.ok) throw new Error('Vendor not found');
+                        return response.json();
+                    })
+                    .then(vendor => {
+                        formVendorIdInput.value = vendor.id;
+                        document.getElementById('vendor_name').value = vendor.vendor_name;
+                        document.getElementById('email').value = vendor.email;
+                        document.getElementById('address').value = vendor.address;
+                    })
+                    .catch(error => {
+                        console.error('Vendor Search Error:', error);
+                        document.getElementById('vendor_name').value = 'Vendor not found.';
                     });
-                }
+            });
 
-            }
-        </script>
-
-        <!-- For Product Search-->
-        <script>
-            function search(e) {
-                if (e.value) {
-                    $.ajax({
-                        url: "/searchproduct",
-                        type: "GET",
-                        data: {
-                            id: e.value
-                        },
-                        success: function(response) {
-                            var html = "<ul class='dropdown-menu show'>";
-                            $.each(response, function(key, value) {
-                                html += "<li><a href='#' class='dropdown-item' data-model='" + value.model + "' data-description='" + value.description + "'>" + value.model + "-" + value.description + "</a></li>"
-                            });
-                            html += "</ul>";
-                            $("#userlist").html(html);
-                        },
-                    });
-                }
-            }
-
-            // Event delegation for dynamically created elements            
-            let count = 0;
-            $(document).on('click', '.dropdown-item', function(e) {
-                count++;
-                e.preventDefault();
-
-                let name = $(this).data('model');
-                let description = $(this).data('description');
-                let price = $(this).data('unit_price');
-                let productId = $(this).data('id');
-
-                let staticHTML = `
-                <div class="product-row mb-3 p-2 border rounded">
-                    <form id="productForm" method="POST" action="">
-                        @csrf
-                        <div class="table-responsive">
-                            <table class="table table-bordered" id="productTable">
-                                <thead>
-                                    <tr>
-                                        <th>SN</th>
-                                        <th>Item</th>
-                                        <th>Unit Price</th>
-                                        <th>Qty.</th>
-                                        <th>Total Price</th>
-                                        <th>PSN</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                </tbody>
-                            </table>
-                        </div>
-                        <button type="submit" class="btn btn-success">Submit</button>
-                    </form>
-                </div>`;
-
-                let newRow = `
-                <tr>
-                    <td>${count}</td>
-                    <td>
-                        <input type="text" name="products[${count}][model]" class="form-control item-name" style="width: 400px;" required>
-                    </td>
-                    <td>
-                        <input type="number" name="products[${count}][unit_price]" class="form-control unit-price" step="0.01" style="width: 120px;" required>
-                    </td>
-                    <td>
-                        <input type="number" name="products[${count}][quantity]" class="form-control quantity" min="1" value="1" style="width:70px;" required>
-                    </td>
-                    <td>
-                        <input type="number" name="products[${count}][total_price]" class="form-control total-price" style="width: 120px;" readonly>
-                    </td>
-
-                    <td class="part-numbers">
-                        <div class="part-number-group">
-                            <input type="text" name="products[${count}][part_numbers][0]" class="form-control part-number mb-1" required>
-                        </div>
-                    </td>
-
-                    
-                    <td>
-                        <button type="button" class="btn btn-danger remove-row">X</button>
-                    </td>
-                </tr>
-            `;
-
-                if ($('#productForm').length === 0) {
-                    $('#selProduct').append(staticHTML);
-                }
-                $('#productTable tbody').append(newRow);
-                $(`input[name="products[${count}][model]"]`).val(name + '-' + description);
-                $(`input[name="products[${count}][unit_price]"]`).val(price);
-                $('#userlist').html('');
-
-                // Calculate total price and update part number fields when quantity changes
-                $(document).on('change', '.quantity', function() {
-                    const row = $(this).closest('tr');
-                    const unitPrice = parseFloat(row.find('.unit-price').val()) || 0;
-                    const quantity = parseInt($(this).val()) || 1;
-                    const totalPrice = unitPrice * quantity;
-
-                    row.find('.total-price').val(totalPrice.toFixed(2));
-
-                    // Update part number fields based on quantity
-                    const partNumbersContainer = row.find('.part-numbers');
-                    const currentPartNumberCount = partNumbersContainer.find('.part-number').length;
-
-                    if (quantity > currentPartNumberCount) {
-                        // Add additional part number fields
-                        for (let i = currentPartNumberCount; i < quantity; i++) {
-                            const productIndex = row.index();
-                            partNumbersContainer.append(`
-                        <div class="part-number-group">
-                            <input type="text" name="products[${productIndex}][part_numbers][${i}]" class="form-control part-number mb-1" required>
-                        </div>
-                    `);
-                        }
-                    } else if (quantity < currentPartNumberCount) {
-                        // Remove excess part number fields
-                        partNumbersContainer.find('.part-number-group:gt(' + (quantity - 1) + ')').remove();
-                    }
+            // +++ ADDED: CENTRAL FUNCTION TO CALCULATE TOTALS +++
+            const updateTotals = () => {
+                let subTotal = 0;
+                itemContainer.querySelectorAll('.total-price').forEach(input => {
+                    subTotal += parseFloat(input.value) || 0;
                 });
 
+                const discount = parseFloat(discountInput.value) || 0;
+                const grandTotal = subTotal - discount;
 
-            });
-            //    For Table row close
-            $(document).on('click', '.remove-row', function() {
-                $(this).closest('tr').remove();
-            });
-        </script>
+                // Update display fields
+                document.getElementById('sub_total').value = subTotal.toFixed(2);
+                document.getElementById('grand_total').value = grandTotal.toFixed(2);
 
-    </x-app-layout>
+                // Update hidden form fields for submission
+                document.getElementById('form_sub_total').value = subTotal.toFixed(2);
+                document.getElementById('form_grand_total').value = grandTotal.toFixed(2);
+            };
+
+            // === DYNAMIC ITEM ROW LOGIC ===
+            const reindexAllRows = () => {
+                itemContainer.querySelectorAll('.item-row').forEach((row, index) => {
+                    row.querySelectorAll('[data-name]').forEach(input => {
+                        input.name = `items[${index}][${input.dataset.name}]`;
+                    });
+                    updateSerialFields(row, index);
+                    const removeBtn = row.querySelector('.remove-item');
+                    if (removeBtn) removeBtn.disabled = (itemContainer.children.length === 1);
+                });
+            };
+
+            const updateSerialFields = (row, index) => {
+                const quantity = parseInt(row.querySelector('.quantity').value) || 0;
+                const serialContainer = row.querySelector('.serial-numbers');
+                serialContainer.innerHTML = '';
+                for (let i = 0; i < quantity; i++) {
+                    serialContainer.insertAdjacentHTML('beforeend',
+                        `<input type="text" class="form-control mb-1" name="items[${index}][serial_number][]" placeholder="Serial #${i + 1}" required>`
+                    );
+                }
+            };
+
+            const addNewItemRow = () => {
+                const clone = document.getElementById('itemRowTemplate').content.cloneNode(true);
+                itemContainer.appendChild(clone);
+                reindexAllRows();
+                updateTotals(); // Recalculate when a new row is added
+            };
+
+            addItemBtn.addEventListener('click', addNewItemRow);
+
+            // +++ ADDED: Event listener for discount changes +++
+            discountInput.addEventListener('input', updateTotals);
+
+            // === EVENT DELEGATION for dynamic content ===
+            itemContainer.addEventListener('input', function(e) {
+                const row = e.target.closest('.item-row');
+                if (!row) return;
+
+                if (e.target.classList.contains('unit-price') || e.target.classList.contains('quantity')) {
+                    const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
+                    const quantity = parseInt(row.querySelector('.quantity').value) || 0;
+                    row.querySelector('.total-price').value = (unitPrice * quantity).toFixed(2);
+
+                    if (e.target.classList.contains('quantity')) {
+                        const index = Array.from(itemContainer.children).indexOf(row);
+                        updateSerialFields(row, index);
+                    }
+                    updateTotals(); // Recalculate on any price/quantity change
+                }
+            });
+
+            itemContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-item')) {
+                    e.target.closest('.item-row').remove();
+                    reindexAllRows();
+                    updateTotals(); // Recalculate when a row is removed
+                }
+            });
+
+            // --- INITIALIZE ---
+            addNewItemRow();
+        });
+    </script>
+</x-app-layout>

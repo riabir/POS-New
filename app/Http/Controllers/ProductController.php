@@ -77,5 +77,14 @@ class ProductController extends Controller
          return redirect()->route('products.index')->with('success', 'Item has been deleted.');
     }
 
+    public function search(Request $request)
+{
+    $term = $request->get('term');
+
+    $products = \App\Models\Product::where('model', 'LIKE', "%{$term}%")->pluck('model');
+
+    return response()->json($products);
+}
+
 }
 
