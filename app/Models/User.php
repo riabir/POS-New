@@ -15,32 +15,22 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
-        'role', // This is essential
+        'role', // Add this
     ];
 
     protected $hidden = [ 'password', 'remember_token' ];
-
     protected $casts = [ 'email_verified_at' => 'datetime', 'password' => 'hashed' ];
 
-    /**
-     * Checks if the user has a specific role.
-     */
     public function hasRole(string $role): bool
     {
         return $this->role === $role;
     }
 
-    /**
-     * Helper to check for the 'admin' role.
-     */
     public function isAdmin(): bool
     {
         return $this->hasRole('admin');
     }
 
-    /**
-     * Helper to check for the 'accounts' role.
-     */
     public function isAccounts(): bool
     {
         return $this->hasRole('accounts');
