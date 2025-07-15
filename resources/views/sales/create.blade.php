@@ -1,43 +1,384 @@
-    <x-app-layout>
-        <x-slot name="header">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                {{ __('Dashboard-Sales') }}
-            </h2>
-        </x-slot>
-        </form>
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+            {{ __('Create Sale') }}
+        </h2>
+    </x-slot>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900 dark:text-gray-100">
-                        <div class="container">
+    {{-- Basic Styling for a clean, organized layout --}}
+    <style>
+        .form-control {
+            display: block;
+            width: 100%;
+            padding: .375rem .75rem;
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.5;
+            color: #212529;
+            background-color: #fff;
+            background-clip: padding-box;
+            border: 1px solid #ced4da;
+            border-radius: .25rem;
+            transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+        }
+
+        .form-control[readonly],
+        .form-control[disabled] {
+            background-color: #e9ecef;
+            opacity: 1;
+        }
 
 
-                            <form method="POST" action="{{ route('products.store') }}">
-                                @csrf
-                                <table id="productTable" class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Serial No.</th>
-                                            <th>Item Name</th>
-                                            <th>Unit Price</th>
-                                            <th>Quantity</th>
-                                            <th>Total Price</th>
-                                            <th>Part Numbers</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Dynamic rows will be added here -->
-                                    </tbody>
-                                </table>
-                                <button type="button" id="addRow" class="btn btn-primary">Add Product</button>
-                                <button type="submit" class="btn btn-success">Save Products</button>
-                            </form>
+        /* ========================================================================
+   2. Reusable Components
+   ======================================================================== */
 
+        /* --- Button Component --- */
+        .btn {
+            display: inline-block;
+            font-weight: 400;
+            line-height: 1.5;
+            color: #212529;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+            user-select: none;
+            background-color: transparent;
+            border 1px solid #ced4da;
+            border-radius: .25rem;
+            transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+        }
+
+        /* Styles for disabled or readonly inputs */
+        .form-control[readonly],
+        .form-control[disabled] {
+            background-color: #e9ecef;
+            opacity: 1;
+        }
+
+
+        /* =================================== */
+        /*   3. Buttons                        */
+        /* =================================== */
+
+        /* Base button style */
+        .btn {
+            display: inline-block;
+            padding: .375rem .75rem;
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.5;
+            text-align: center;
+            vertical-align: middle;
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+            border: 1px solid transparent;
+            border-radius: .25rem;
+        }
+
+        /* Color variations */
+        .btn-primary {
+            color: #fff;
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .btn-success {
+            color: #fff;
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .btn-danger {
+            color: #fff;
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+
+        /* =================================== */
+        /*   4. Component: Totals Section      */
+        /* =================================== */
+        /* Styles for the summary block (sub-total, discount, etc.) */
+
+        .totals-section {
+            max-width: 300px;
+            /* Adjust as needed */
+            margin-left: auto;
+            /* Aligns the entire block to the right */
+        }
+
+        .totals-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .totals-row label {
+            font-weight: bold;
+            margin-right: 1rem;
+            white-space: nowrap;
+            /* Prevents labels from wrapping to a new line */
+        }
+
+        .totals-row input {
+            text-align: right;
+        }
+    </style>
+
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900 dark:text-gray-100">
+
+                    <!-- Customer Information Section -->
+                    <div class="border p-4 rounded mb-4">
+                        <h3 class="font-bold text-lg mb-3">Customer Information</h3>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="phone_search">Search Customer by Phone</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">+880</span>
+                                    <input type="text" id="phone_search" class="form-control"
+                                        placeholder="Enter Phone Number" maxlength="10">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4"><label>Customer Name</label><input type="text" id="customer_name"
+                                    class="form-control" placeholder="Auto Fill" readonly></div>
+                            <div class="col-md-4"><label>Email</label><input type="text" id="email" class="form-control"
+                                    placeholder="Auto Fill" readonly></div>
+                            <div class="col-md-4"><label>Address</label><input type="text" id="address"
+                                    class="form-control" placeholder="Auto Fill" readonly></div>
                         </div>
                     </div>
+
+                    <hr class="my-5" />
+
+                    <!-- Main Sale Form -->
+                    <form id="saleForm" method="POST" action="{{ route('sales.store') }}">
+                        @csrf
+                        <input type="hidden" name="customer_id" id="form_customer_id" required>
+                        <input type="hidden" name="sub_total" id="form_sub_total">
+                        <input type="hidden" name="grand_total" id="form_grand_total">
+
+                        <div class="mb-3">
+                            <label for="remarks">Remarks</label>
+                            <textarea name="remarks" id="remarks" class="form-control"
+                                placeholder="Add any relevant notes for this purchase..."></textarea>
+                        </div>
+
+                        <h3 class="font-bold text-lg mt-5 mb-3">Product Items</h3>
+                        <div id="itemContainer">
+                            {{-- Item rows will be dynamically inserted here by JavaScript --}}
+                        </div>
+
+                        <button type="button" id="addItemBtn" class="btn btn-primary mt-3">+</button>
+
+                        <!-- Totals Section -->
+                        <div class="totals-section mt-4">
+                            <div class="totals-row">
+                                <label for="sub_total">Sub Total</label>
+                                <input type="text" id="sub_total" class="form-control" value="0.00" readonly>
+                            </div>
+                            <div class="totals-row">
+                                <label for="discount">Discount</label>
+                                <input type="number" id="discount" name="discount" class="form-control" value="0"
+                                    min="0">
+                            </div>
+                            <div class="totals-row">
+                                <label for="grand_total">Grand Total</label>
+                                <input type="text" id="grand_total" class="form-control" value="0.00" readonly
+                                    style="font-weight: bold; font-size: 1.1rem; color: #28a745;">
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        <button type="submit" class="btn btn-success">Create Sale</button>
+                    </form>
                 </div>
             </div>
+        </div>
+    </div>
 
-    </x-app-layout>
+    <!-- Template for a single dynamic item row -->
+    <template id="itemRowTemplate">
+        <div class="item-row border p-3 mb-3 rounded">
+            <div class="row">
+                <div class="col-md-3">
+                    {{-- +++ ADDED: <small> tag to display stock quantity +++ --}}
+                    <label>Product <small class="stock-display text-muted" style="font-weight:normal;"></small></label>
+                    <select class="form-control product-input" data-name="product_id" required>
+                        <option value="" selected disabled>Select a Product</option>
+                        @if(isset($products))
+                        @foreach($products as $product)
+                        {{-- +++ ADDED: data-stock and data-warranty attributes +++ --}}
+                        <option value="{{ $product->id }}" 
+                                data-lsp="{{ $product->stock->lsp ?? '0.00' }}"
+                                data-stock="{{ $product->stock->quantity ?? '0' }}"
+                                data-warranty="{{ $product->latestPurchaseItem->warranty ?? '0' }}">
+                            {{ $product->model }} {{ $product->description }}
+                        </option>
+                        @endforeach
+                        @endif
+                    </select>
+                </div>
+                <div class="col-md-2"><label>Unit Price</label><input type="number" step="0.01"
+                        class="form-control unit-price" data-name="unit_price" required></div>
+                <div class="col-md-1"><label>Quantity</label><input type="number" class="form-control quantity"
+                        value="1" min="1" data-name="quantity" required></div>
+                <div class="col-md-2"><label>Total Price</label><input type="text" class="form-control total-price"
+                        data-name="total_price" readonly></div>
+                <div class="col-md-1">
+                    <label>W_D</label>
+                    {{-- +++ CHANGED: Removed hardcoded value and changed class for clarity +++ --}}
+                    <input type="number" class="form-control warranty-input"
+                           value="" min="0" data-name="warranty" required>
+                </div>
+                <div class="col-md-2"><label>Serial Numbers</label>
+                    <div class="serial-numbers"></div>
+                </div>
+                <div class="col-md-1"><label>Action</label><button type="button"
+                        class="btn btn-danger remove-item w-100">X</button></div>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // === DOM ELEMENTS ===
+            const itemContainer = document.getElementById('itemContainer');
+            const addItemBtn = document.getElementById('addItemBtn');
+            const phoneSearchInput = document.getElementById('phone_search');
+            const formCustomerIdInput = document.getElementById('form_customer_id');
+            const discountInput = document.getElementById('discount');
+
+            // === CUSTOMER SEARCH LOGIC (Unchanged) ===
+            phoneSearchInput.addEventListener('input', function() {
+                const phone = this.value.trim();
+                formCustomerIdInput.value = '';
+                document.getElementById('customer_name').value = '';
+                document.getElementById('email').value = '';
+                document.getElementById('address').value = '';
+                if (phone.length !== 10) return;
+                fetch(`{{ url('searchcustomer') }}/${phone}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Customer not found');
+                        return response.json();
+                    })
+                    .then(customer => {
+                        formCustomerIdInput.value = customer.id;
+                        document.getElementById('customer_name').value = customer.customer_name;
+                        document.getElementById('email').value = customer.email;
+                        document.getElementById('address').value = customer.address;
+                    })
+                    .catch(error => {
+                        console.error('Customer Search Error:', error);
+                        document.getElementById('customer_name').value = 'Customer not found.';
+                    });
+            });
+
+            // === CENTRAL FUNCTION TO CALCULATE TOTALS (Unchanged) ===
+            const updateTotals = () => {
+                let subTotal = 0;
+                itemContainer.querySelectorAll('.total-price').forEach(input => {
+                    subTotal += parseFloat(input.value) || 0;
+                });
+                const discount = parseFloat(discountInput.value) || 0;
+                const grandTotal = subTotal - discount;
+                document.getElementById('sub_total').value = subTotal.toFixed(2);
+                document.getElementById('grand_total').value = grandTotal.toFixed(2);
+                document.getElementById('form_sub_total').value = subTotal.toFixed(2);
+                document.getElementById('form_grand_total').value = grandTotal.toFixed(2);
+            };
+
+            // === DYNAMIC ITEM ROW LOGIC (Unchanged) ===
+            const reindexAllRows = () => {
+                itemContainer.querySelectorAll('.item-row').forEach((row, index) => {
+                    row.querySelectorAll('[data-name]').forEach(input => {
+                        input.name = `items[${index}][${input.dataset.name}]`;
+                    });
+                    updateSerialFields(row, index);
+                    const removeBtn = row.querySelector('.remove-item');
+                    if (removeBtn) removeBtn.disabled = (itemContainer.children.length === 1);
+                });
+            };
+            const updateSerialFields = (row, index) => {
+                const quantity = parseInt(row.querySelector('.quantity').value) || 0;
+                const serialContainer = row.querySelector('.serial-numbers');
+                serialContainer.innerHTML = '';
+                for (let i = 0; i < quantity; i++) {
+                    serialContainer.insertAdjacentHTML('beforeend',
+                        `<input type="text" class="form-control mb-1" name="items[${index}][serial_number][]" placeholder="Serial #${i + 1}" required>`
+                    );
+                }
+            };
+            const addNewItemRow = () => {
+                const clone = document.getElementById('itemRowTemplate').content.cloneNode(true);
+                itemContainer.appendChild(clone);
+                reindexAllRows();
+                updateTotals();
+            };
+
+            addItemBtn.addEventListener('click', addNewItemRow);
+            discountInput.addEventListener('input', updateTotals);
+
+            // === EVENT DELEGATION for dynamic content (Updated) ===
+            itemContainer.addEventListener('input', function(e) {
+                const row = e.target.closest('.item-row');
+                if (!row) return;
+
+                // +++ UPDATED: Logic to handle product selection +++
+                if (e.target.classList.contains('product-input')) {
+                    const selectedOption = e.target.options[e.target.selectedIndex];
+                    
+                    // Get data from the selected option's data attributes
+                    const lsp = selectedOption.dataset.lsp || '0.00';
+                    const stock = selectedOption.dataset.stock || '0';
+                    const warranty = selectedOption.dataset.warranty || '0';
+
+                    // Find the elements within this specific row
+                    const unitPriceInput = row.querySelector('.unit-price');
+                    const warrantyInput = row.querySelector('.warranty-input');
+                    const stockDisplay = row.querySelector('.stock-display');
+
+                    // Update the form fields and display
+                    unitPriceInput.value = lsp;
+                    warrantyInput.value = warranty;
+                    stockDisplay.textContent = `(Stock: ${stock})`;
+
+                    // Trigger 'input' event on unit price to recalculate total
+                    unitPriceInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+
+                // Existing logic for price/quantity changes
+                if (e.target.classList.contains('unit-price') || e.target.classList.contains('quantity')) {
+                    const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
+                    const quantity = parseInt(row.querySelector('.quantity').value) || 0;
+                    row.querySelector('.total-price').value = (unitPrice * quantity).toFixed(2);
+
+                    if (e.target.classList.contains('quantity')) {
+                        const index = Array.from(itemContainer.children).indexOf(row);
+                        updateSerialFields(row, index);
+                    }
+                    updateTotals();
+                }
+            });
+
+            // === EVENT DELEGATION for remove button (Unchanged) ===
+            itemContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-item')) {
+                    e.target.closest('.item-row').remove();
+                    reindexAllRows();
+                    updateTotals();
+                }
+            });
+
+            // --- INITIALIZE ---
+            addNewItemRow();
+        });
+    </script>
+</x-app-layout>

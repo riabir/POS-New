@@ -8,11 +8,14 @@ use App\Models\Categorie;
 
 class ProductTypeController extends Controller
 {
+   
     public function index()
     {
-        $categories = Categorie::all();
-        $product_types = ProductType::all();
+        // WRONG WAY (This returns a Collection)
+        $categories = Categorie::latest()->paginate(10);
+        $product_types = ProductType::latest()->paginate(10);
         return view('product_types.index', compact('categories','product_types'));
+
     }
 
     public function store(Request $request)

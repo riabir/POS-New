@@ -9,8 +9,12 @@ class CategorieController extends Controller
 {
     public function index()
     {
-        $categories = Categorie::all();
+        // WRONG WAY (This returns a Collection)
+        $categories = Categorie::latest()->paginate(10);
+        // OR
+
         return view('categories.index', compact('categories'));
+
     }
 
 

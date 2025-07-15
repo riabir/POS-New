@@ -17,8 +17,8 @@
                             @method('put')
 
                             <div class="mb-3">
-                                <label for="name" class="form-label">Customer Name</label>
-                                <input type="text" class="form-control" id="name" name="name" value="{{$customer->name}}"><br>
+                                <label for="customer_name" class="form-label">Customer Name</label>
+                                <input type="text" class="form-control" id="customer_name" name="customer_name" value="{{$customer->customer_name}}"><br>
                             </div>
                             <div class="mb-3">
                                 <label for="phone" class="form-label">Phone Number</label>

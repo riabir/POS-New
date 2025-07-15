@@ -14,10 +14,10 @@ class ProductType extends Model
 
     protected $guarded = [];
     
-    public function category()
-    {
-        return $this->belongsTo(Categorie::class);
-    }
+   public function category()
+{
+    return $this->belongsTo(Categorie::class, 'category_id');
+}
 
     public function products()
     {
