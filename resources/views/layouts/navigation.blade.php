@@ -44,19 +44,65 @@
                                 <x-dropdown-link :href="route('sales.index')">
                                     {{ __('Sales Report') }}
                                 </x-dropdown-link>
-
                                 <x-dropdown-link :href="route('customers.index')">
                                     {{ __('New Customers') }}
+                                </x-dropdown-link>
+
+                                <x-dropdown-link :href="route('customer_ledgers.index')">
+                                    {{ __('Customer Ledger') }}
+                                </x-dropdown-link>
+
+                                <x-dropdown-link :href="route('profit.index')">
+                                    {{ __('Profit Report') }}
+                                </x-dropdown-link>
+                                <!-- Summary Report Link -->
+                                <x-dropdown-link :href="route('reports.summary')">
+                                    {{ __('Monthly/Yearly Summary') }}
+                                </x-dropdown-link>
+                                <x-dropdown-link :href="route('commissions.index')">
+                                    {{ __('Commission Report') }}
+                                </x-dropdown-link>
+                                <x-dropdown-link :href="route('serial.search')">
+                                    {{ __('All Search') }}
                                 </x-dropdown-link>
                             </x-slot>
                         </x-dropdown>
                     </div>
 
-                    <!-- Vendor Section -->
+                    <!-- Vendor Dropdown -->
+                    <div class="hidden sm:flex sm:items-center sm:ms-6">
+                        <x-dropdown align="right" width="48">
+                            <x-slot name="trigger">
+                                <div
+                                    class="flex items-center cursor-pointer text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition ease-in-out duration-150">
+                                    <span>Vendor</span>
+                                    <svg class="ms-1 h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd"
+                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                            </x-slot>
 
-                    <x-nav-link :href="route('vendors.index')" :active="request()->routeIs('vendors.index')">
+                            <!-- Sales Section -->
+                            <x-slot name="content">
+                                <x-dropdown-link :href="route('vendors.index')">
+                                    {{ __('All Vendor') }}
+                                </x-dropdown-link>
+
+                                <x-dropdown-link :href="route('vendor_ledgers.index')">
+                                    {{ __('Vendor Ledgure') }}
+                                </x-dropdown-link>
+
+                            </x-slot>
+                        </x-dropdown>
+                    </div>
+
+                    <!-- Vendor Section -->
+                    <!-- <x-nav-link :href="route('vendors.index')" :active="request()->routeIs('vendors.index')">
                         Vendor
-                    </x-nav-link>
+                    </x-nav-link> -->
 
 
 
@@ -133,13 +179,13 @@
                         </x-dropdown>
                     </div>
 
-                    <!-- Employee Section -->
+                    <!-- Payroll Section -->
                     <div class="hidden sm:flex sm:items-center sm:ms-6">
                         <x-dropdown align="right" width="48">
                             <x-slot name="trigger">
                                 <div
                                     class="flex items-center cursor-pointer text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition ease-in-out duration-150">
-                                    <span>Employee</span>
+                                    <span>Payroll</span>
                                     <svg class="ms-1 h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg"
                                         viewBox="0 0 20 20">
                                         <path fill-rule="evenodd"
@@ -151,12 +197,34 @@
 
                             <x-slot name="content">
                                 <x-dropdown-link :href="route('employees.index')">
+                                    {{ __('Employee Report') }}
+                                </x-dropdown-link>
+                                <x-dropdown-link :href="route('employees.create')">
                                     {{ __('New Employee') }}
+                                </x-dropdown-link>
+                                <x-dropdown-link :href="route('salary_structures.index')">
+                                    {{ __('Salary Structure') }}
+                                </x-dropdown-link>
+                                <x-dropdown-link :href="route('payouts.index')">
+                                    {{ __('Bonus') }}
                                 </x-dropdown-link>
 
                                 <x-dropdown-link :href="route('users.create')">
                                     {{ __('User Registration') }}
                                 </x-dropdown-link>
+                             
+                                <x-dropdown-link :href="route('expenses.index')">
+                                    {{ __('Expense Approval') }}
+                                </x-dropdown-link>
+                                <x-dropdown-link :href="route('expenses.paid')">
+                                    {{ __('Paid Expense History') }}
+                                </x-dropdown-link>
+                                
+                                <x-dropdown-link :href="route('expenses.user.index')">
+                                    {{ __('My Expenses') }}
+                                </x-dropdown-link>
+                            
+
                             </x-slot>
                         </x-dropdown>
                     </div>
@@ -188,10 +256,6 @@
                                     {{ __('Customer Advance') }}
                                 </x-dropdown-link>
 
-                                <x-dropdown-link :href="route('customer_ledgers.index')">
-                                    {{ __('Customer Ledger') }}
-                                </x-dropdown-link>
-
                                 <x-dropdown-link :href="route('vendor_accounts.index')">
                                     {{ __('Vendor Payment') }}
                                 </x-dropdown-link>
@@ -199,13 +263,14 @@
                                 <x-dropdown-link :href="route('vendor_advances.create')">
                                     {{ __('Vendor Advance') }}
                                 </x-dropdown-link>
-
-                                <x-dropdown-link :href="route('vendor_ledgers.index')">
-                                    {{ __('Vendor Ledgure') }}
+                                <x-dropdown-link :href="route('expense_types.index')">
+                                    {{ __('Expense Type') }}
                                 </x-dropdown-link>
-
                                 <x-dropdown-link :href="route('expenses.index')">
                                     {{ __('Expense') }}
+                                </x-dropdown-link>
+                                <x-dropdown-link :href="route('shareholders.index')">
+                                    {{ __('Partner Management') }}
                                 </x-dropdown-link>
                             </x-slot>
                         </x-dropdown>

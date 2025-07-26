@@ -13,9 +13,10 @@ class VendorLedgerController extends Controller
         return view('vendor_ledgers.index', compact('vendors'));
     }
 
-    public function show(Vendor $vendor)
+   public function show(Vendor $vendor)
     {
-        // Eager load 'ledgers' with 'purchase'. Order by date then ID for correct sequence.
+        // Eager load the 'ledgers' relationship along with the purchase for each ledger entry.
+        // Order by date and then ID to ensure transactions on the same day are in the correct order.
         $vendor->load(['ledgers' => function ($query) {
             $query->with('purchase')
                   ->orderBy('transaction_date', 'asc')

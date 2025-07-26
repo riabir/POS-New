@@ -11,13 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('employees', function (Blueprint $table) {
+        Schema::create('sale_commissions', function (Blueprint $table) {
             $table->id();
-            $table->string('first_name');
-            $table->string('last_name');
-            $table->string('email')->unique();
-            $table->string('phone');
-            $table->string('address');
+            $table->foreignId('sale_id')->constrained()->onDelete('cascade');
+            $table->morphs('recipient'); // This creates `recipient_id` (unsignedBigInteger) and `recipient_type` (string)
+            $table->decimal('amount', 10, 2);
+            $table->text('notes')->nullable();
             $table->timestamps();
         });
     }
@@ -27,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('employees');
+        Schema::dropIfExists('sale_commissions');
     }
 };

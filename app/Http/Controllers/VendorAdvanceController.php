@@ -10,15 +10,21 @@ use Illuminate\Support\Facades\DB;
 
 class VendorAdvanceController extends Controller
 {
+    /**
+     * Show the form for creating a new advance payment.
+     */
     public function create()
     {
         $vendors = Vendor::orderBy('vendor_name')->get();
         return view('vendor_advances.create', compact('vendors'));
     }
 
+    /**
+     * Store a newly created advance payment in storage.
+     */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'vendor_id' => ['required', 'exists:vendors,id'],
             'payment_amount' => ['required', 'numeric', 'min:0.01'],
             'payment_type' => ['required', 'string', 'in:Cash,Bank Transfer,Cheque'],
@@ -26,17 +32,16 @@ class VendorAdvanceController extends Controller
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
-         DB::transaction(function () use ($validated) {
-            // Create the DEBIT entry for the advance payment
+        DB::transaction(function () use ($request) {
             VendorLedger::create([
-                'vendor_id' => $validated['vendor_id'],
-                'purchase_id' => null, // No purchase is attached to an advance
-                'transaction_date' => $validated['transaction_date'],
+                'vendor_id' => $request->vendor_id,
+                'purchase_id' => null, // <-- Critical: No purchase attached
+                'transaction_date' => $request->transaction_date,
                 'description' => 'Advance Payment',
-                'received_by' => Auth::user()->name,
-                'payment_type' => $validated['payment_type'],
-                'notes' => $validated['notes'],
-                'debit' => $validated['payment_amount'],
+                'received_by' => Auth::user()->name, // Assumes you're using this field for the payer
+                'payment_type' => $request->payment_type,
+                'notes' => $request->notes,
+                'debit' => $request->payment_amount,
                 'credit' => 0,
             ]);
         });

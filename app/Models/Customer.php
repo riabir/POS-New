@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Models;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -47,6 +48,9 @@ class Customer extends Model
         // The (float) cast ensures we always return a number (0.0 if null).
         return (float) ($totalAdvances - $totalAdjusted);
     }
+
+    public function commissionsReceived()
+    {
+        return $this->morphMany(SaleCommission::class, 'recipient');
+    }
 }
-
-

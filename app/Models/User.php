@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Employee; // <-- 1. IMPORT THE EMPLOYEE MODEL
 
 class User extends Authenticatable
 {
@@ -15,7 +16,7 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
-        'role', // This is essential
+        'role',
     ];
 
     protected $hidden = [ 'password', 'remember_token' ];
@@ -40,9 +41,26 @@ class User extends Authenticatable
 
     /**
      * Helper to check for the 'accounts' role.
+     * Note: I changed this to 'accounts' to match your model.
+     * If your role name in the database is 'accountant', change it here.
      */
     public function isAccounts(): bool
     {
         return $this->hasRole('accounts');
+    }
+
+    // ==========================================================
+    //  2. ADD THIS RELATIONSHIP METHOD
+    // ==========================================================
+    /**
+     * Get the employee record associated with the user.
+     *
+     * This defines a one-to-one relationship based on the email address.
+     * It assumes that the `email` in the `users` table matches the `email`
+     * in the `employees` table.
+     */
+    public function employee()
+    {
+        return $this->hasOne(Employee::class, 'email', 'email');
     }
 }
