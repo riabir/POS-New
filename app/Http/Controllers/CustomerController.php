@@ -2,39 +2,62 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\Customer;
-use phpDocumentor\Reflection\Types\Nullable;
+use Illuminate\Validation\Rule;
 
 class CustomerController extends Controller
 {
-    // For index File
-    public function index()
+    /**
+     * Display a listing of the customers with filtering.
+     */
+    public function index(Request $request)
     {
-        $customers = Customer::all();
+        $query = Customer::latest();
+
+        // Filter by Customer ID
+        if ($request->filled('id')) {
+            $query->where('id', $request->id);
+        }
+
+        // Filter by Customer Name
+        if ($request->filled('customer_name')) {
+            $query->where('customer_name', 'like', '%' . $request->customer_name . '%');
+        }
+
+        // Filter by Phone Number
+        if ($request->filled('phone')) {
+            $query->where('phone', 'like', '%' . $request->phone . '%');
+        }
+
+        $customers = $query->paginate(15)->appends($request->query());
+
         return view('customers.index', compact('customers'));
     }
 
-    // For Path Insert From
+    /**
+     * Show the form for creating a new customer.
+     */
     public function create()
     {
         return view('customers.create');
     }
 
-    // For Inser Data
+    /**
+     * Store a newly created customer in storage.
+     */
     public function store(Request $request)
     {
+        // FIX: 'customer_name' typo corrected. Unique check should be on 'customers' table.
         $validated = $request->validate([
-            'customer_ame' => 'required|string|max:255',
-            'phone' => 'required|string|max:11',
-            'email' => 'required|email|unique:employees',
+            'customer_name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20|unique:customers,phone',
+            'email' => 'required|email|unique:customers,email',
             'address' => 'required|string',
             'concern' => 'required|string',
             'designation' => 'required|string',
-            'opening_balance' => 'nullable|numeric', // or use 'decimal:0,2' if supported
-            'notes' => 'nullable|string|max:255',
-
+            'opening_balance' => 'nullable|numeric',
+            'notes' => 'nullable|string',
         ]);
 
         $validated['created_by'] = auth()->id();
@@ -44,34 +67,50 @@ class CustomerController extends Controller
         return redirect()->route('customers.index')->with('success', 'Customer created successfully.');
     }
 
-    // Edit File
-    public function edit($id)
+    /**
+     * Display the specified customer.
+     */
+    public function show(Customer $customer)
     {
-        $customer = Customer::find($id);
+        return view('customers.show', compact('customer'));
+    }
+
+    /**
+     * Show the form for editing the specified customer.
+     */
+    public function edit(Customer $customer)
+    {
         return view('customers.edit', compact('customer'));
     }
 
-
-    //update file   
-    public function update($id, Request $request)
+    /**
+     * Update the specified customer in storage.
+     */
+    public function update(Request $request, Customer $customer)
     {
+        $validated = $request->validate([
+            'customer_name' => 'required|string|max:255',
+            'phone' => ['required', 'string', 'max:20', Rule::unique('customers')->ignore($customer->id)],
+            'email' => ['required', 'email', Rule::unique('customers')->ignore($customer->id)],
+            'address' => 'required|string',
+            'concern' => 'required|string',
+            'designation' => 'required|string',
+            'opening_balance' => 'nullable|numeric',
+            'notes' => 'nullable|string',
+        ]);
 
-        $customer = Customer::find($id);
-        $customer->customer_name = $request->customer_name;
-        $customer->phone = $request->phone;
-        $customer->email = $request->email;
-        $customer->address = $request->address;
-        $customer->concern = $request->concern;
-        $customer->designation = $request->designation;
-        $customer->opening_balance = $request->opening_balance;
-        $customer->notes = $request->notes;
-        $customer->save();
-        return redirect()->route('customers.index')->with('success', 'Customer Update Successfully.');
+        $validated['updated_by'] = auth()->id();
+
+        $customer->update($validated);
+
+        return redirect()->route('customers.index')->with('success', 'Customer updated successfully.');
     }
 
-    //Delete file
-     public function destroy($id){
-         $customer= Customer::find($id);
+    /**
+     * Remove the specified customer from storage.
+     */
+    public function destroy(Customer $customer)
+    {
          $customer->delete();
          return redirect()->route('customers.index')->with('success', 'Customer has been deleted.');
     }

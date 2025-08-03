@@ -8,7 +8,7 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <h3 class="text-lg font-medium">Select a Vendor to View Ledger</h3>
+                    <h3 class="text-lg font-medium">Select a Customer to View Ledger</h3>
                     <ul class="mt-4 list-disc list-inside">
                         @forelse($customers as $customer)
                             <li>
@@ -17,7 +17,7 @@
                                 </a>
                             </li>
                         @empty
-                            <p>No vendors with transactions found.</p>
+                            <p>No customers with transactions found.</p>
                         @endforelse
                     </ul>
                 </div>

@@ -9,10 +9,10 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     <h3 class="text-lg font-medium">Select a Vendor to View Ledger</h3>
-                    <ul class="mt-4 list-disc list-inside space-y-2">
+                    <ul class="mt-4 list-disc list-inside">
                         @forelse($vendors as $vendor)
                             <li>
-                                <a href="{{ route('vendor.ledgers.show', $vendor->id) }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                <a href="{{ route('vendor.ledgers.show', $vendor->id) }}" class="text-blue-600 hover:underline">
                                     {{ $vendor->vendor_name }}
                                 </a>
                             </li>

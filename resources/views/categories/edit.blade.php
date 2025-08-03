@@ -26,7 +26,7 @@
                                     
                             </div>                           
 
-                            <input type="submit" class="p-3 bg-red-800 text-white rounded-xl" value="Submit">
+                            <input type="submit" class="btn btn-primary" value="Submit">                           
                         </form>
 
                     </div>

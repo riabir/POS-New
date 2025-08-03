@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\VendorAccount;
@@ -16,65 +15,57 @@ class VendorAccountController extends Controller
      */
     public function index()
     {
-        // Eager load vendor.ledgers for performance to calculate available_advance efficiently.
-        $unpaidBills = VendorAccount::with(['vendor.ledgers', 'purchase'])
+        $unpaidBills = VendorAccount::with(['vendor', 'purchase'])
             ->whereIn('status', ['unpaid', 'partially_paid'])
             ->latest('id')
             ->paginate(10);
-
         return view('vendor_accounts.index', compact('unpaidBills'));
     }
 
     /**
-     * Correctly processes payments. Advance Adjustment is used for calculation only.
+     * Process payment for a vendor account.
      */
     public function processPayment(Request $request, VendorAccount $vendor_account)
     {
-        // --- 1. Simplified Validation ---
-        $currentBalance = $vendor_account->balance;
+        $vendor = $vendor_account->vendor;
+    $currentBalance = $vendor_account->balance;
+    $availableAdvance = $vendor->available_advance;
+    
+    // Calculate the maximum advance that can be applied
+    $maxAdvanceForThisBill = min($currentBalance, $availableAdvance);
+    
+    $validated = $request->validate([
+        'due_payment' => ['nullable', 'numeric', 'min:0'],
+        'advance_adjustment' => ['nullable', 'numeric', 'min:0', 'max:' . $maxAdvanceForThisBill],
+        'payment_type' => ['required_if:due_payment,>,0', 'string', 'in:Cash,Bank Transfer,Cheque'],
+        'notes' => ['nullable', 'string', 'max:500'],
+    ], [
+        'advance_adjustment.max' => 'Advance adjustment cannot exceed the bill balance or available advance (' . number_format($maxAdvanceForThisBill, 2) . ').',
+    ]);
+    
+    $duePayment = (float)($validated['due_payment'] ?? 0);
+    $advanceAdjustment = (float)($validated['advance_adjustment'] ?? 0);
+    $totalPayment = $duePayment + $advanceAdjustment;
+    
+    // Check if total payment is zero
+    if ($totalPayment <= 0) {
+        return back()->withErrors(['payment_error' => 'You must enter a payment amount.'])->withInput();
+    }
+    
+    // NEW: Check for overpayment
+    if ($totalPayment > $currentBalance) {
+        return back()->withErrors([
+            'payment_error' => 'Total payment (' . number_format($totalPayment, 2) . ') cannot exceed the current bill balance of ' . number_format($currentBalance, 2) . '.'
+        ])->withInput();
+    }
 
-        $validated = $request->validate([
-            'new_payment' => ['nullable', 'numeric', 'min:0'],
-            // *** THIS IS THE KEY CHANGE ***
-            // We still validate 'advance_adjustment' to ensure it's a valid number,
-            // but we REMOVE the 'max' rule. It is now just a calculator field.
-            'advance_adjustment' => ['nullable', 'numeric', 'min:0'],
-            
-            'payment_type' => ['nullable', 'required_if:new_payment,>,0', 'string', 'in:Cash,Bank Transfer,Cheque'],
-            'notes' => ['nullable', 'string', 'max:500'],
-            'due_payment' => ['required', 'numeric', 'min:0'],
-        ], [
-            // We no longer need the 'advance_adjustment.max' custom message.
-            'payment_type.required_if' => 'The Payment Type field is required when making a new payment.',
-        ]);
-
-        // Get the individual components and the total payment from the validated data
-        $newPayment = (float)($validated['new_payment'] ?? 0);
-        $advanceAdjustment = (float)($validated['advance_adjustment'] ?? 0);
-        $totalPayment = (float)($validated['due_payment'] ?? 0);
-
-        // Security check: Ensure frontend calculation matches backend to prevent tampering.
-        if (abs($totalPayment - ($newPayment + $advanceAdjustment)) > 0.01) {
-            return back()->withErrors(['payment_error' => 'Payment calculation mismatch. Please refresh and try again.'])->withInput();
-        }
-
-        // Business logic checks
-        if ($totalPayment <= 0) {
-            return back()->withErrors(['payment_error' => 'You must enter a payment amount.'])->withInput();
-        }
-
-        if ($totalPayment > round($currentBalance, 2) + 0.01) { // Add a small tolerance
-            return back()->withErrors(['payment_error' => 'Total payment cannot exceed the current balance.'])->withInput();
-        }
-
-        // --- 2. Database Transaction ---
-        DB::transaction(function () use ($vendor_account, $newPayment, $totalPayment, $request) {
+        DB::transaction(function () use ($vendor_account, $duePayment, $advanceAdjustment, $request, $totalPayment) {
             $purchase = $vendor_account->purchase;
             $notes = $request->notes ?? null;
             $purchase_no = $purchase ? $purchase->purchase_no : 'Bill';
-
-            // ONLY the "New Payment" value creates a new ledger entry.
-            if ($newPayment > 0) {
+            
+            // Entry 1: Create a DEBIT for the new money received (liability account)
+            if ($duePayment > 0) {
                 VendorLedger::create([
                     'vendor_id' => $vendor_account->vendor_id,
                     'purchase_id' => $vendor_account->purchase_id,
@@ -83,24 +74,57 @@ class VendorAccountController extends Controller
                     'received_by' => Auth::user()->name,
                     'payment_type' => $request->payment_type,
                     'notes' => $notes,
-                    'debit' => $newPayment,
+                    'debit' => $duePayment,
                     'credit' => 0,
+                    'account_type' => 'liability',
+                    'transaction_type' => 'payment',
                 ]);
             }
             
-            // The "Total Payment" value updates the VendorAccount.
+            // Entry 2: Create entries for advance adjustment
+            if ($advanceAdjustment > 0) {
+                // Reduce the liability
+                VendorLedger::create([
+                    'vendor_id' => $vendor_account->vendor_id,
+                    'purchase_id' => $vendor_account->purchase_id,
+                    'transaction_date' => now(),
+                    'description' => 'Advance Applied to ' . $purchase_no,
+                    'received_by' => Auth::user()->name,
+                    'payment_type' => 'Advance Adjustment',
+                    'notes' => 'Applied from available advance balance.',
+                    'debit' => $advanceAdjustment,
+                    'credit' => 0,
+                    'account_type' => 'liability',
+                    'transaction_type' => 'application',
+                ]);
+                
+                // Reduce the asset (advance)
+                VendorLedger::create([
+                    'vendor_id' => $vendor_account->vendor_id,
+                    'purchase_id' => $vendor_account->purchase_id,
+                    'transaction_date' => now(),
+                    'description' => 'Advance Applied to ' . $purchase_no,
+                    'received_by' => Auth::user()->name,
+                    'payment_type' => 'Advance Adjustment',
+                    'notes' => 'Applied to purchase.',
+                    'debit' => 0,
+                    'credit' => $advanceAdjustment,
+                    'account_type' => 'asset',
+                    'transaction_type' => 'application',
+                ]);
+            }
+            
+            // Update the master bill record
             $vendor_account->paid_amount += $totalPayment;
-
-            // Update the status of the bill
-            if ($vendor_account->balance <= 0.009) {
-                $vendor_account->paid_amount = $vendor_account->amount;
+            if ($vendor_account->balance <= 0) {
                 $vendor_account->status = 'paid';
                 $vendor_account->paid_date = now();
-                if ($purchase) $purchase->update(['status' => 'paid']);
+                if ($purchase) {
+                    $purchase->update(['status' => 'paid']);
+                }
             } else {
                 $vendor_account->status = 'partially_paid';
             }
-            
             $vendor_account->save();
         });
 

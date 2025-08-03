@@ -34,17 +34,20 @@ class CustomerAdvanceController extends Controller
         ]);
 
         DB::transaction(function () use ($request) {
+            // Record the advance payment in the asset account (credit)
             CustomerLedger::create([
                 'customer_id' => $request->customer_id,
-                'transaction_id' => 'ADV-' . strtoupper(Str::random(8)), // New
-                'transaction_type' => 'advance_payment', // New
+                'sale_id' => null,
+                'transaction_id' => 'ADV-' . strtoupper(Str::random(8)),
                 'transaction_date' => $request->transaction_date,
                 'description' => 'Advance Payment Received',
-                'credit' => $request->payment_amount, // A payment is a DEBIT
+                'credit' => $request->payment_amount, // Credit for advances received
                 'debit' => 0,
                 'payment_type' => $request->payment_type,
                 'received_by' => Auth::user()->name,
                 'notes' => $request->notes,
+                'account_type' => 'asset', // Advances are assets
+                'transaction_type' => 'advance',
             ]);
         });
 

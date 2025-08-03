@@ -1,81 +1,65 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Dashboard-Update Customer Info') }}
+            {{ __('Edit Customer: ') }} <span class="text-indigo-600">{{ $customer->customer_name }}</span>
         </h2>
     </x-slot>
-    </form>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <div class="container">
 
-                        <form method="post" action="{{route('customers.update',$customer->id)}}">
-                            @csrf
-                            @method('put')
+                    @if ($errors->any())
+                        {{-- ... error display ... --}}
+                    @endif
 
-                            <div class="mb-3">
-                                <label for="customer_name" class="form-label">Customer Name</label>
-                                <input type="text" class="form-control" id="customer_name" name="customer_name" value="{{$customer->customer_name}}"><br>
+                    <form method="post" action="{{ route('customers.update', $customer->id) }}" class="space-y-6">
+                        @csrf
+                        @method('PATCH')
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="customer_name" class="block font-medium text-sm">Customer / Company Name</label>
+                                <input type="text" id="customer_name" name="customer_name" value="{{ old('customer_name', $customer->customer_name) }}" class="mt-1 block w-full rounded-md shadow-sm" required>
                             </div>
-                            <div class="mb-3">
-                                <label for="phone" class="form-label">Phone Number</label>
-                                <input type="text" class="form-control" id="phone" name="phone"
-                                    maxlength="11" value="{{$customer->phone}}">
+                            <div>
+                                <label for="phone" class="block font-medium text-sm">Phone</label>
+                                <input type="text" id="phone" name="phone" value="{{ old('phone', $customer->phone) }}" class="mt-1 block w-full rounded-md shadow-sm" required>
                             </div>
-
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Email Address</label>
-                                <input type="text" class="form-control" id="email" name="email"
-                                    value="{{$customer->email}}">
+                            <div>
+                                <label for="email" class="block font-medium text-sm">Email Address</label>
+                                <input type="email" id="email" name="email" value="{{ old('email', $customer->email) }}" class="mt-1 block w-full rounded-md shadow-sm" required>
                             </div>
-
-
-                            <div class="mb-3">
-                                <label for="address" class="form-label">Address</label>
-                                <input type="text" class="form-control" id="addresss" name="address"
-                                    value="{{$customer->address}}">
+                            <div>
+                                <label for="address" class="block font-medium text-sm">Address</label>
+                                <input type="text" id="address" name="address" value="{{ old('address', $customer->address) }}" class="mt-1 block w-full rounded-md shadow-sm" required>
                             </div>
-
-                            <div class="mb-3">
-                                <label for="concern" class="form-label">Concern Person</label>
-                                <input type="text" class="form-control" id="concern" name="concern"
-                                    value="{{$customer->concern}}">
+                            <div>
+                                <label for="concern" class="block font-medium text-sm">Concern Person</label>
+                                <input type="text" id="concern" name="concern" value="{{ old('concern', $customer->concern) }}" class="mt-1 block w-full rounded-md shadow-sm" required>
                             </div>
-
-                            <!-- Expense Type -->
-                            <div class="mb-3">
-                                <label for="designation" class="form-label">Designation</label>
-                                <select class="form-select" id="designation" name="designation" required>
-                                    <option value="">Select</option>
-                                    <option value="CEO" {{ $customer->designation == 'CEO' ? 'selected' : '' }}>CEO</option>
-                                    <option value="Manager-IT" {{ $customer->designation == 'Manager-IT' ? 'selected' : '' }}>Manager-IT</option>
-                                    <option value="Senior Executive-IT" {{ $customer->designation == 'Senior Executive-IT' ? 'selected' : '' }}>Senior Executive-IT</option>
-                                    <option value="Executive-IT" {{ $customer->designation == 'Executive-IT' ? 'selected' : '' }}>Executive-IT</option>
-                                    <option value="Senior Executive-Proc" {{ $customer->designation == 'Senior Executive-Proc' ? 'selected' : '' }}>Senior Executive-Proc</option>
-                                    <option value="Executive-Proc" {{ $customer->designation == 'Executive-Proc' ? 'selected' : '' }}>Executive-Proc</option>
-                                    <option value="Admin" {{ $customer->designation == 'Admin' ? 'selected' : '' }}>Admin</option>
-                                </select>
+                             <div>
+                                <label for="designation" class="block font-medium text-sm">Designation</label>
+                                <input type="text" id="designation" name="designation" value="{{ old('designation', $customer->designation) }}" class="mt-1 block w-full rounded-md shadow-sm" required>
                             </div>
-
-                            <div class="mb-3">
-                                <label for="opening_balance" class="form-label">Opening Balance</label>
-                                <input type="number" class="form-control" id="opening_balance" name="opening_balance"
-                                    step="0.01" value="{{$customer->opening_balance}}">
+                             <div>
+                                <label for="opening_balance" class="block font-medium text-sm">Opening Balance</label>
+                                <input type="number" step="0.01" id="opening_balance" name="opening_balance" value="{{ old('opening_balance', $customer->opening_balance) }}" class="mt-1 block w-full rounded-md shadow-sm">
                             </div>
+                        </div>
+                        <div>
+                            <label for="notes" class="block font-medium text-sm">Notes</label>
+                            <textarea id="notes" name="notes" rows="3" class="mt-1 block w-full rounded-md shadow-sm">{{ old('notes', $customer->notes) }}</textarea>
+                        </div>
 
-                            <div class="mb-3">
-                                <label for="notes" class="form-label">Notes</label>
-                                <textarea class="form-control" id="notes" name="notes" rows="3">{{ old('notes', $customer->notes) }}</textarea>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary">Submit</button>
-                        </form>
-
-                    </div>
+                        <div class="flex items-center gap-4 border-t pt-6">
+                            <button type="submit" class="btn btn-primary">Update Customer</button>
+                            <a href="{{ route('customers.index') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
+    </div>
 </x-app-layout>

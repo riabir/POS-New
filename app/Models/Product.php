@@ -7,17 +7,31 @@ use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
-    // use HasFactory; // Uncomment if you use factories
-
     protected $fillable = [
         'category_id',
         'product_type_id',
         'brand_id',
         'model',
-        'name',
-        'description',
-        // Add other fillable attributes as needed
+        'header',       // The full product title
+        'description',  // The marketing paragraph
+        'mrp',          // The selling price
+        'specifications',// The key-value technical details
     ];
+
+    // =====================================================================
+    //  THIS IS THE CRUCIAL MISSING PIECE
+    // =====================================================================
+    /**
+     * The attributes that should be cast.
+     * This tells Laravel to automatically convert the 'specifications'
+     * array to JSON when saving, and back to an array when retrieving.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'specifications' => 'array',
+    ];
+    // =====================================================================
 
     /**
      * Get the product type that this product belongs to.
@@ -44,15 +58,14 @@ class Product extends Model
     {
         return $this->hasOne(Stock::class);
     }
+
     public function purchaseItems()
     {
         return $this->hasMany(PurchaseItem::class);
     }
 
-     public function latestPurchaseItem()
+    public function latestPurchaseItem()
     {
-        // This is a powerful Eloquent relationship that gets the single
-        // record from the 'hasMany' relationship that is the "latest".
         return $this->hasOne(PurchaseItem::class)->latestOfMany();
     }
 }

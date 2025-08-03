@@ -1,168 +1,83 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Dashboard-Expense') }}
-        </h2>
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                {{ __('Expenses') }}
+            </h2>
+            <a href="{{ route('expenses.create') }}" class="btn btn-primary">New Expense</a>
+        </div>
     </x-slot>
-
-    </form>
-
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            {{-- Stat Cards --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                    <h4 class="text-gray-500 dark:text-gray-400">Number Of Unapproved Expenses</h4>
+                    <p class="text-3xl font-bold mt-2">{{ $unapprovedCount }}</p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                    <h4 class="text-gray-500 dark:text-gray-400">Unapproved Expenses Total</h4>
+                    <p class="text-3xl font-bold mt-2">৳{{ number_format($unapprovedTotal, 2) }}</p>
+                </div>
+            </div>
+
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <div class="container">
+                    <div class="border-b border-gray-200 dark:border-gray-700 mb-4">
+                        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                            @php $statuses = ['pending', 'approved', 'rejected', 'paid']; @endphp
+                            @foreach($statuses as $s)
+                            <a href="{{ route('expenses.index', ['status' => $s]) }}"
+                                class="{{ $status == $s ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                                {{ ucfirst($s) }}
+                            </a>
+                            @endforeach
+                        </nav>
+                    </div>
 
-                        <!-- <a href="{{ route('employees.create') }}" class="btn btn-primary">Add New Expense</a>
-                            <br><br><br> -->
-
-                        <!-- pop up from -->
-
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                            data-bs-target="#registerModal">
-                            Expense
-                        </button>
-
-                        <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel"
-                            aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="registerModalLabel">Expense</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <!-- Expense Form -->
-                                        <form id="expenseForm" method="post" action="{{route('expenses.store')}}">
-                                            @csrf
-
-                                            <!-- Date -->
-                                            <div class="mb-3">
-                                                <label for="date" class="form-label">Date</label>
-                                                <input type="date" class="form-control" id="date" name="date"
-                                                    value="{{ date('Y-m-d') }}" required>
-
-                                            </div>
-
-                                            <!-- Expense By -->
-                                            <div class="mb-3">
-                                                <label for="expense_by" class="form-label">Expense By</label>
-                                                <select type="text" class="form-select" id="expense_by"
-                                                    name="expense_by" required>
-                                                    <option value="">Select</option>
-                                                    <option value="Abir">Abir</option>
-                                                    <option value="Pear">Pear</option>
-                                                    <option value="Nibir">Nibir</option>
-                                                    <option value="Jim">Jim</option>
-                                                    <option value="Sakib">Sakib</option>
-                                                    <!-- Add more options as needed -->
-                                                </select>
-                                            </div>
-
-                                            <!-- Expense Type -->
-                                            <div class="mb-3">
-                                                <label for="expense_type" class="form-label">Expense Type</label>
-                                                <select type="text" class="form-select" id="expense_type"
-                                                    name="expense_type" required>
-                                                    <option value="">Select</option>
-                                                    <option value="delivery">Delivery </option>
-                                                    <option value="npsb charge">NPSB Charge</option>
-                                                    <!-- Add more if needed -->
-                                                </select>
-                                            </div>
-
-
-                                            <!-- Remarks -->
-                                            <div class="mb-3">
-                                                <label for="remarks" class="form-label">Remarks</label>
-                                                <textarea type="text" class="form-control" id="remarks" name="remarks"
-                                                    rows="3"></textarea>
-                                            </div>
-
-                                            <!-- Amount -->
-                                            <div class="mb-3">
-                                                <label for="amount" class="form-label">Amount</label>
-                                                <input type="number" class="form-control" id="amount" name="amount"
-                                                    step="0.01" placeholder="0.00" required>
-                                            </div>
-
-                                            <div class="modal-footer">
-                                                <button type="submit" class="btn btn-primary">Save Expense</button>
-                                                <button type="button" class="btn btn-secondary"
-                                                    onclick="clearForm()">Clear</button>
-
-
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <br><br><br>
-
-
-                        <h1>Expense List</h1>
-                        <br>
-                        @if(session('success'))
-                            <div class="alert alert-success">
-                                {{ session('success') }}
-                            </div>
-                        @endif
-
-                        <table class="table">
-                            <thead>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
-
-                                    <th>Date</th>
-                                    <th>Expense By</th>
-                                    <th>Expense Type</th>
-                                    <th>Remarks</th>
-                                    <th>Amount</th>
-                                    <th>Action</th>
-                                    <th></th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase">Employee</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase">Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase">Period</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium uppercase">Total</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase">Submitted</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase">Action</th>
                                 </tr>
                             </thead>
-
-                            <tbody>
-                                @foreach($expenses as $expense)
-                                    <tr>
-                                        <td>{{ $expense->date }} </td>
-                                        <td>{{ $expense->expense_by}}</td>
-                                        <td>{{ $expense->expense_type }}</td>
-                                        <td>{{ $expense->remarks }}</td>
-                                        <td>{{ $expense->amount }}</td>
-
-                                        <td>
-                                            <a href="{{ route('expenses.edit', $expense->id) }}"
-                                                class="btn btn-sm btn-warning me-2">Edit</a>
-
-                                            <form method="POST"
-                                                action="{{ route('expenses.destroy', $expense->id) }}"
-                                                style="display:inline;">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button onclick="return confirm('Are you sure?')" type="submit"
-                                                    class="btn btn-sm btn-danger">
-                                                    Delete
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                @endforeach
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                @forelse($expenses as $expense)
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $expense->employee->full_name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $expense->expenseType->name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $expense->from_date->format('d/m/y') }} - {{ $expense->to_date->format('d/m/y') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-mono">৳{{ number_format($expense->total, 2) }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $expense->created_at->diffForHumans() }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        @if($status === 'pending' || $status === 'verified')
+                                        @if (auth()->user()->role === 'admin')
+                                        <a href="{{ route('expenses.approve.form', $expense) }}" class="btn btn-sm btn-info">Review</a>
+                                        @endif
+                                        @elseif($status === 'approved')
+                                        <a href="{{ route('expenses.pay.form', $expense) }}" class="btn btn-sm btn-success">Pay Now</a>
+                                        @else
+                                        -
+                                        @endif
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-8">No expenses found in this category.</td>
+                                </tr>
+                                @endforelse
                             </tbody>
                         </table>
-
                     </div>
+                    <div class="mt-4">{{ $expenses->links() }}</div>
                 </div>
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function clearForm() {
-            document.getElementById("expenseForm").reset();
-        }
-    </script>
 </x-app-layout>

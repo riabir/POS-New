@@ -1,45 +1,73 @@
 <?php
-
 namespace App\Models;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 
-class Vendor extends Model 
+class Vendor extends Model
 {
-
-   protected $fillable = [
+    protected $fillable = [
         'vendor_name',
         'phone',
         'email',
         'address',
-        'concern_person'
+        'concern_person',
+        'designation',
     ];
-   public function ledgers()
+
+    public function ledgers()
     {
         return $this->hasMany(VendorLedger::class);
     }
 
-    public function accounts()
+    public function purchases()
     {
-        return $this->hasMany(VendorAccount::class);
+        return $this->hasMany(Purchase::class);
     }
 
     /**
-     * Calculates the available advance balance based on the overall ledger balance.
-     * This is the correct, robust way to calculate it.
+     * Get the available advance balance for this vendor.
+     * This is money the vendor paid us that hasn't been used.
      */
-  public function getAvailableAdvanceAttribute(): float
+   public function getAvailableAdvanceAttribute()
 {
-    // 1. First, it calculates the true balance. This number CAN be negative
-    //    if the vendor is owed money.
-    //    Example: $balance = 1000 (debit) - 5000 (credit) = -4000
-    $balance = $this->ledgers()->sum('debit') - $this->ledgers()->sum('credit');
-
-    // 2. THIS IS THE CRUCIAL PART. It uses a ternary operator as a guard.
-    //    It checks: "Is the balance greater than 0?"
-    //    - If YES, return the positive balance.
-    //    - If NO (meaning the balance is 0 or negative), return 0.
-    return $balance > 0 ? round($balance, 2) : 0;
+    // Calculate total debits (increases advance) for asset account
+    $totalDebits = $this->ledgers()
+        ->where('account_type', 'asset')
+        ->sum('debit');
+    
+    // Calculate total credits (decreases advance) for asset account
+    $totalCredits = $this->ledgers()
+        ->where('account_type', 'asset')
+        ->sum('credit');
+        
+    return $totalDebits - $totalCredits;
 }
+
+    /**
+     * Get the current payable balance for this vendor.
+     * This is money we owe the vendor for purchases.
+     */
+    public function getPayableBalanceAttribute()
+{
+    // Calculate total credits (increases payable) for liability account
+    $totalCredits = $this->ledgers()
+        ->where('account_type', 'liability')
+        ->sum('credit');
+    
+    // Calculate total debits (decreases payable) for liability account
+    $totalDebits = $this->ledgers()
+        ->where('account_type', 'liability')
+        ->sum('debit');
+        
+    return $totalCredits - $totalDebits;
+}
+
+    /**
+     * Get the current net position.
+     * Positive means you owe the vendor, negative means vendor owes you.
+     */
+    public function getNetPositionAttribute()
+    {
+        return $this->payable_balance - $this->available_advance;
+    }
 }

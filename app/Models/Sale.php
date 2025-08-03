@@ -2,79 +2,100 @@
 
 namespace App\Models;
 
-// 1. Import all the necessary models and facades
+// Import all necessary models and facades
 use App\Models\SaleItem;
 use App\Models\Stock;
 use App\Models\CustomerAccount;
 use App\Models\CustomerLedger;
-use Exception;
+use App\Models\SaleCommission;
+use App\Models\ShareholderTransaction; // <-- REQUIRED: Import this model
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
-
 class Sale extends Model
 {
-    // Make sure 'bill_date' is in your $fillable array
-    protected $fillable = ['customer_id', 'bill_no', 'bill_date', 'remarks', 'sub_total', 'discount', 'grand_total', 'status'];
+    /**
+     * The attributes that are mass assignable.
+     * @var array
+     */
+    protected $fillable = [
+        'customer_id',
+        'bill_no',
+        'bill_date',
+        'remarks',
+        'sub_total',
+        'discount',
+        'grand_total',
+        'status'
+    ];
 
-    // And in your casts array
+    /**
+     * The attributes that should be cast to native types.
+     * @var array
+     */
     protected $casts = [
         'bill_date' => 'date',
     ];
 
     /**
      * The "booted" method of the model.
-     * This is where we register our model event listeners for safe deletion.
+     * Registers model event listeners for safe deletion. This is the single source of truth for deletion logic.
      */
     protected static function booted(): void
     {
-        // Register a 'deleting' event listener.
-        // This closure will execute right before a Sale record is deleted.
         static::deleting(function (Sale $sale) {
-            
             // Wrap everything in a database transaction for data integrity.
+            // If any part fails, the entire operation will be rolled back.
             DB::transaction(function () use ($sale) {
-
-                // REQUIREMENT: RETURN ITEMS AND SERIALS TO STOCK
-                // We must iterate through the items of the sale *before* they are deleted.
+                // 1. Return items and serial numbers to stock
                 foreach ($sale->items as $item) {
-                    // Find the master stock record for the product in this sale item.
                     $stock = Stock::where('product_id', $item->product_id)->first();
-
-                    // If a stock record for this product exists, add the quantity and serials back.
                     if ($stock) {
-                        // 1. Add the quantity from this sale back to the main stock quantity.
                         $stock->quantity += $item->quantity;
-
-                        // 2. Add the serial numbers from this sale back to the main stock serials array.
-                        // We check if either array has serials to avoid errors.
                         if (!empty($stock->serial_numbers) || !empty($item->serial_numbers)) {
                             $currentStockSerials = $stock->serial_numbers ?? [];
                             $serialsToReturn = $item->serial_numbers ?? [];
-                            
-                            // Merge the arrays, ensure every serial is unique, and re-index the array.
                             $stock->serial_numbers = array_values(array_unique(array_merge($currentStockSerials, $serialsToReturn)));
                         }
-                        
                         $stock->save();
                     }
                 }
 
-                // --- CLEANUP OF OTHER RELATED DATA ---
-                
-                // Delete the SaleItem records.
+                // 2. Reverse Shareholder and Customer Commission Ledger Entries
+                // This logic must run BEFORE deleting the commission records themselves.
+                foreach ($sale->commissions as $commission) {
+                    // Check if the recipient was a Shareholder and delete their ledger entry.
+                    if ($commission->recipient_type === 'App\Models\Shareholder') {
+                        // Find and delete the specific transaction created for this commission.
+                        // Using multiple criteria makes the deletion more precise and safe.
+                        ShareholderTransaction::where([
+                            'shareholder_id' => $commission->recipient_id,
+                            'type'           => 'Commission',
+                            'amount'         => $commission->amount,
+                            'description'    => 'Commission received for sale ' . $sale->bill_no,
+                        ])->delete();
+                    }
+                    // Add similar logic for customers if their commission creates a ledger entry.
+                    // (Assuming customer commissions credit their account ledger)
+                    if ($commission->recipient_type === 'App\Models\Customer') {
+                        CustomerLedger::where('sale_id', $sale->id)
+                                      ->where('transaction_type', 'commission_payment')
+                                      ->delete();
+                    }
+                }
+
+                // 3. Delete related records now that ledger reversals are complete.
+                $sale->commissions()->delete();
                 $sale->items()->delete();
-
-                // Delete the CustomerAccount invoice.
                 CustomerAccount::where('sale_id', $sale->id)->delete();
-
-                // Delete all CustomerLedger entries for this sale (invoice and payments).
                 CustomerLedger::where('sale_id', $sale->id)->delete();
-                
             });
         });
     }
 
+    // ===============================================
+    //               RELATIONSHIPS
+    // ===============================================
 
     public function customer()
     {
@@ -89,5 +110,38 @@ class Sale extends Model
     public function ledgers()
     {
         return $this->hasMany(CustomerLedger::class);
+    }
+
+    /**
+     * Get the commissions associated with the sale.
+     */
+    public function commissions()
+    {
+        return $this->hasMany(SaleCommission::class);
+    }
+
+    // ===============================================
+    //               ACCESSORS & LOGIC
+    // ===============================================
+
+    /**
+     * MODIFIED: Calculate the true NET profit for the sale.
+     * This now includes the deduction for any sales commissions paid.
+     *
+     * @return float
+     */
+    public function getTotalProfitAttribute(): float
+    {
+        // 1. Calculate the gross profit from the items sold
+        // Formula: SUM of (quantity * (sale_price - cost_price)) for each item
+        $grossProfit = $this->items->sum(function ($item) {
+            return $item->quantity * ($item->unit_price - $item->cost_price);
+        });
+
+        // 2. Calculate the total cost of commissions for this sale
+        $totalCommissionCost = $this->commissions->sum('amount');
+
+        // 3. Return the net profit
+        return $grossProfit - $totalCommissionCost;
     }
 }

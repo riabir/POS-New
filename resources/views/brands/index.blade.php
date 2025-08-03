@@ -1,166 +1,159 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Dashboard-Brand') }}
-        </h2>
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                {{ __('Brands') }}
+            </h2>
+            <a href="{{ route('brands.create') }}" class="btn btn-primary">Add New Brand</a>
+        </div>
     </x-slot>
 
-    </form>
+    <style>
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .dark .table th,
+        .dark .table td {
+            border-color: #4b5563;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .filter-form {
+            background-color: #f9f9f9;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .dark .filter-form {
+            background-color: #4a5568;
+            border-color: #2d3748;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-end;
+        }
+    </style>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <div class="container">
 
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                            data-bs-target="#registerModal">
-                            New Brand
-                        </button>
+                    @if(session('success'))
+                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                        <span class="block sm:inline">{{ session('success') }}</span>
+                    </div>
+                    @endif
 
-                        <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel"
-                            aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="registerModalLabel">Add Product Types</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
+                    <!-- Filter Form -->
+                    <div class="filter-form">
+                        <h3 class="text-lg font-semibold mb-3">Filter Brands</h3>
+                        <form action="{{ route('brands.index') }}" method="GET">
+                            <div class="filter-grid">
 
-                                        <!-- categories Form -->
-                                        <form id="product_typeForm" method="post" action="{{route('brands.store')}}">
-                                            @csrf
-
-                                            <div class="mb-3">
-                                                <label for="category_id" class="form-label">Category</label>
-                                                <select class="form-select" id="category_id" name="category_id"
-                                                    required>
-                                                    <option value="">Select Category</option>
-                                                    @foreach($categories as $category)
-                                                        <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label for="product_type_id" class="form-label">Product Type</label>
-                                                <select class="form-select" id="product_type_id" name="product_type_id"
-                                                    required disabled>
-                                                    <option value="">Select Product Type</option>
-                                                </select>
-                                            </div>
-
-                                            <!-- Brand -->
-                                            <div class="mb-3">
-                                                <label for="name" class="form-label">Brand</label>
-                                                <input type="text" class="form-control" id="name" name="name" required>
-                                            </div>
-
-                                            <div class="modal-footer">
-                                                <button type="submit" class="btn btn-primary">Save</button>
-                                                <button type="button" class="btn btn-secondary"
-                                                    onclick="clearForm()">Clear</button>
-
-                                            </div>
-                                        </form>
-                                    </div>
+                                <div>
+                                    <label for="id" class="block text-sm font-medium">Brand ID</label>
+                                    <input type="number" name="id" id="id" value="{{ request('id') }}" class="mt-1 block w-full rounded-md shadow-sm" placeholder="e.g., 12">
+                                </div>
+                                <div>
+                                    <label for="name" class="block text-sm font-medium">Brand Name</label>
+                                    <input type="text" name="name" id="name" value="{{ request('name') }}" class="mt-1 block w-full rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label for="category_id" class="block text-sm font-medium">Category</label>
+                                    <select name="category_id" id="category_id" class="mt-1 block w-full rounded-md shadow-sm">
+                                        <option value="">All Categories</option>
+                                        @foreach($categories as $category)
+                                        <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="product_type_id" class="block text-sm font-medium">Product Type</label>
+                                    <select name="product_type_id" id="product_type_id" class="mt-1 block w-full rounded-md shadow-sm">
+                                        <option value="">All Types</option>
+                                        @foreach($productTypes as $type)
+                                        <option value="{{ $type->id }}" {{ request('product_type_id') == $type->id ? 'selected' : '' }}>{{ $type->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="filter-buttons">
+                                    <button type="submit" class="btn btn-primary">Filter</button>
+                                    <a href="{{ route('brands.index') }}" class="btn btn-secondary">Clear</a>
                                 </div>
                             </div>
-                        </div>
+                        </form>
+                    </div>
 
-                        <br><br><br>
-
-
-                        <h1>Brand List</h1>
-                        <br>
-                        @if(session('success'))
-                            <div class="alert alert-success">
-                                {{ session('success') }}
-                            </div>
-                        @endif
-
+                    <div class="overflow-x-auto">
                         <table class="table">
-                            <thead>
+                            <thead class="bg-gray-100 dark:bg-gray-700">
                                 <tr>
-
-                                    <th>No</th>
-                                    <th>Categorie</th>
-                                    <th>Product Types</th>
-                                    <th>Brand</th>
-                                    <th>Edit</th>
-                                    <th>Delete</th>
-                                    <th></th>
+                                    <th>#</th>
+                                    <th>ID</th>
+                                    <th>Brand Name</th>
+                                    <th>Category</th>
+                                    <th>Product Type</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
-
                             <tbody>
-
-                                @foreach($brands as $brand)
-                                    <tr>
-                                        <td>{{ $brand->id }} </td>
-                                        <!--  -->
-                                        <td>{{ $brand->Category->name }} </td>
-                                        <td>{{ $brand->ProductType->name }} </td>
-                                        <td>{{ $brand->name }} </td>
-                                        <td>
-                                            <a href="{{route('brands.edit', $brand->id)}}"
-                                                class="btn btn-sm btn-warning">Edit</a>
-                                        </td>
-                                        <td>
-                                            <form method="POST" action="{{route('brands.destroy', $brand->id)}}">
+                                @forelse($brands as $brand)
+                                <tr>
+                                    <th scope="row">{{ $loop->iteration + $brands->firstItem() - 1 }}</th>
+                                    <td>{{ $brand->id }}</td>
+                                    <td class="font-medium">{{ $brand->name }}</td>
+                                    <td>{{ $brand->category?->name }}</td>
+                                    <td>{{ $brand->productType?->name }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ route('brands.edit', $brand->id) }}" class="btn btn-sm btn-warning">Edit</a>
+                                            <form method="POST" action="{{ route('brands.destroy', $brand->id) }}" onsubmit="return confirm('Are you sure?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button onclick="return confirm('are you sure')"
-                                                    type="submit">Delete</button>
+                                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                             </form>
-                                        </td>
-                                @endforeach
+                                        </div>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="4" class="text-center py-4">No brands found.</td>
+                                </tr>
+                                @endforelse
                             </tbody>
                         </table>
-
                     </div>
+
+                    <div class="mt-4">
+                        {{ $brands->links() }}
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function clearForm() {
-            document.getElementById("product_typeForm").reset();
-        }
-    </script>
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            $('#category_id').change(function () {
-                var category_id = $(this).val();
-
-                if (category_id) {
-                    $('#product_type_id').prop('disabled', false);
-                    $.ajax({
-                        url: "/getproducttypes",
-                        type: "GET",
-                        data: {
-                            id: category_id
-                        },
-                        success: function (data) {
-                            $('#product_type_id').empty();
-                            $('#product_type_id').append('<option value="">Select Product Type</option>');
-                            $.each(data, function (key, value) {
-                                $('#product_type_id').append('<option value="' + value.id + '">' + value.name + '</option>');
-                            });
-                        }
-                    });
-                } else {
-                    $('#product_type_id').prop('disabled', true);
-                    $('#product_type_id').empty();
-                    $('#product_type_id').append('<option value="">Select Product Type</option>');
-                }
-            });
-        });
-    </script>
-
 </x-app-layout>

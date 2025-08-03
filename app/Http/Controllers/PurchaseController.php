@@ -1,14 +1,15 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Vendor;
 use App\Models\Purchase;
 use App\Models\Product;
-use App\Models\PurchaseItem; 
+use App\Models\PurchaseItem;
 use App\Models\Stock;
 use App\Models\VendorAccount;
 use App\Models\VendorLedger;
-use Illuminate\Http\Request;
+use Illuminate\Http\Request; // <-- Make sure Request is imported
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -16,19 +17,60 @@ use Exception;
 
 class PurchaseController extends Controller
 {
-    // index, create, and other methods are unchanged...
-    public function index()
+    /**
+     * Display a listing of the resource.
+     * MODIFIED to include filtering capabilities.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function index(Request $request)
     {
-        $purchases = Purchase::with('vendor')->latest()->paginate(15);
+        // Start with the base query, including the vendor relationship to avoid N+1 problems
+        $query = Purchase::with('vendor')->latest();
+
+        // --- FILTERING LOGIC ---
+
+        // Filter by Vendor Phone Number
+        if ($request->filled('phone')) {
+            $query->whereHas('vendor', function ($q) use ($request) {
+                $q->where('phone', 'like', '%' . $request->phone . '%');
+            });
+        }
+
+        // Filter by Purchase Order (PO) Number
+        if ($request->filled('purchase_no')) {
+            $query->where('purchase_no', 'like', '%' . $request->purchase_no . '%');
+        }
+
+        // Filter by Purchase Date
+        if ($request->filled('date')) {
+            $query->whereDate('purchase_date', $request->date);
+        }
+
+        // Filter by Product Model
+        if ($request->filled('model')) {
+            // This is a nested relationship: Purchase -> items -> product
+            $query->whereHas('items.product', function ($q) use ($request) {
+                $q->where('model', 'like', '%' . $request->model . '%');
+            });
+        }
+
+        // Execute the query and paginate the results
+        // IMPORTANT: Append the query string to pagination links to keep filters active
+        $purchases = $query->paginate(15)->appends($request->query());
+
         return view('purchases.index', compact('purchases'));
     }
 
+    // ... all your other methods (create, store, destroy, showPreview, etc.) remain unchanged ...
     public function create()
     {
         $products = Product::all();
         return view('purchases.create', compact('products'));
     }
-
+    
+    // ... store, destroy, searchvendor, showPreview methods are fine ...
     public function store(Request $request)
     {
         $validatedData = $request->validate([
@@ -42,16 +84,16 @@ class PurchaseController extends Controller
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.total_price' => 'required|numeric|min:0',
-            'items.*.warranty' => 'nullable|integer|min:0', // +++ UPDATED VALIDATION KEY
+            'items.*.warranty' => 'nullable|integer|min:0',
             'items.*.serial_number' => 'required|array',
             'items.*.serial_number.*' => 'required|string|max:255|distinct',
         ]);
-
+        
         DB::transaction(function () use ($validatedData) {
             $last = Purchase::latest('id')->first();
             $nextNo = 'PO-' . str_pad(($last ? $last->id + 1 : 1), 5, '0', STR_PAD_LEFT);
             $purchaseDate = now();
-
+            
             $purchase = Purchase::create([
                 'vendor_id' => $validatedData['vendor_id'],
                 'purchase_no' => $nextNo,
@@ -61,37 +103,8 @@ class PurchaseController extends Controller
                 'discount' => $validatedData['discount'],
                 'grand_total' => $validatedData['grand_total'],
             ]);
-
-            foreach ($validatedData['items'] as $item) {
-                // +++ 2. ADD THE WARRANTY CALCULATION LOGIC HERE +++
-                $warranty = $item['warranty'] ?? null;
-                $expiryDate = null;
-                
-                // Calculate expiry date only if warranty Days are provided and greater than 0
-                if ($warranty && is_numeric($warranty) && $warranty > 0) {
-                    $expiryDate = $purchaseDate->copy()->addDays((int)$warranty)->toDateString();
-                }
-
-                // +++ 3. ADD THE CALCULATED VALUES TO THE CREATE METHOD +++
-                $purchase->items()->create([
-                    'product_id' => $item['product_id'],
-                    'unit_price' => $item['unit_price'],
-                    'quantity' => $item['quantity'],
-                    'total_price' => $item['total_price'],
-                    'serial_numbers' => $item['serial_number'],
-                    'warranty' => $warranty, // <-- Save warranty duration
-                    'warranty_expiry_date' => $expiryDate,   // <-- Save calculated expiry date
-                ]);
-                
-                // Stock logic remains the same
-                $stock = Stock::firstOrNew(['product_id' => $item['product_id']]);
-                $stock->quantity = ($stock->quantity ?? 0) + $item['quantity'];
-                $stock->serial_numbers = array_merge($stock->serial_numbers ?? [], $item['serial_number']);
-                $stock->lsp = $item['unit_price'];
-                $stock->save();
-            }
-
-            // Vendor Account and Ledger logic remains the same
+            
+            // Create vendor account record
             VendorAccount::create([
                 'purchase_id' => $purchase->id,
                 'vendor_id' => $purchase->vendor_id,
@@ -99,34 +112,56 @@ class PurchaseController extends Controller
                 'due_date' => $purchaseDate->copy()->addDays(30),
                 'status' => 'unpaid',
             ]);
-
+            
+            // Create ledger entry for the purchase (liability account)
             VendorLedger::create([
                 'vendor_id' => $purchase->vendor_id,
                 'purchase_id' => $purchase->id,
                 'transaction_date' => $purchaseDate,
                 'description' => 'Purchase on ' . $purchase->purchase_no,
                 'bill_by' => Auth::user()->name,
+                'debit' => 0,
                 'credit' => $purchase->grand_total,
+                'account_type' => 'liability',
+                'transaction_type' => 'purchase',
             ]);
+            
+            foreach ($validatedData['items'] as $item) {
+                $warranty = $item['warranty'] ?? null;
+                $expiryDate = null;
+                if ($warranty && is_numeric($warranty) && $warranty > 0) {
+                    $expiryDate = $purchaseDate->copy()->addDays((int)$warranty)->toDateString();
+                }
+                
+                $purchase->items()->create([
+                    'product_id' => $item['product_id'],
+                    'unit_price' => $item['unit_price'],
+                    'quantity' => $item['quantity'],
+                    'total_price' => $item['total_price'],
+                    'serial_numbers' => $item['serial_number'],
+                    'warranty' => $warranty,
+                    'warranty_expiry_date' => $expiryDate,
+                ]);
+                
+                $stock = Stock::firstOrNew(['product_id' => $item['product_id']]);
+                $stock->quantity = ($stock->quantity ?? 0) + $item['quantity'];
+                $stock->serial_numbers = array_merge($stock->serial_numbers ?? [], $item['serial_number']);
+                $stock->lsp = $item['unit_price'];
+                $stock->save();
+            }
         });
-
+        
         return redirect()->route('purchases.index')->with('success', 'Purchase created. Bill is now pending in Accounts.');
     }
+    
 
-    // destroy and searchvendor methods are unchanged...
     public function destroy(Purchase $purchase)
     {
         try {
-            // This one line will trigger the 'deleting' event in the Purchase model.
             $purchase->delete();
-
-            // If the deletion succeeds, redirect with a success message.
             return redirect()->route('purchases.index')
                              ->with('success', 'Purchase and all related records have been deleted successfully.');
-
         } catch (Exception $e) {
-            // If the 'deleting' event threw an exception (e.g., stock too low),
-            // catch it here and redirect back with the specific error message.
             return redirect()->back()->withErrors(['deletion_error' => $e->getMessage()]);
         }
     }
@@ -139,12 +174,9 @@ class PurchaseController extends Controller
             : response()->json(['message' => 'Vendor not found'], 404);
     }
 
- public function showPreview(Purchase $purchase)
+    public function showPreview(Purchase $purchase)
     {
         $purchase->load('vendor', 'items.product.brand');
-
-        // +++ FIX: Change the view name to match the blade file (remove underscore) +++
         return view('purchases.invoice_preview', compact('purchase'));
     }
- 
 }
